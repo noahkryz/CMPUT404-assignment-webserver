@@ -33,47 +33,115 @@ class MyWebServer(socketserver.BaseRequestHandler):
     
     def handle(self):
         self.data = self.request.recv(1024).strip()
-        file_object = open("www/index.html", "r")
-        file_string = file_object.read()
-        file_string = file_string + "\r\n"
-        # print(file_string)
 
-        self.request.sendall("Content-Type: text/html; charset=UTF-8\r\n".encode("utf-8"))
-        self.request.sendall(file_string.encode("utf-8"))
+        parsedRequest = self.parseClientRequest()
 
-        # print(self.data.decode())
-        # print('\n')
-        # self.request.sendall("")
-        print(self.parseClientRequest(self.data))
+        self.methodName = parsedRequest[0]
+        self.pathName = parsedRequest[1]
+        self.protocolName = parsedRequest[2]
+
+        self.checkMethodName()
+        self.checkFileName()
+
+        # file_object = open("www/index.html", "r")
+        # file_string = file_object.read()
+        # file_string = file_string + "\r\n"
+        # # print(file_string)
+
+        # self.request.sendall("HTTP/1.1 200 OK\n".encode("utf-8"))
+        # self.request.sendall("Content-Type: text/html; charset=UTF-8\r\n".encode("utf-8"))
+        # self.request.sendall(file_string.encode("utf-8"))
+
+        
         
         # print ("Got a request of: %s\n" % self.data)
         # self.request.sendall(bytearray("OK",'utf-8'))
 
-    def parseClientRequest(self, clientRequest):
-        fullUserRequest = clientRequest.decode().split("\r\n")
+    def parseClientRequest(self):
+        fullUserRequest = self.data.decode().split("\r\n")
         requestInformation = fullUserRequest[0].split(' ')
 
         methodName = requestInformation[0]
         pathName = requestInformation[1]
         protocolName = requestInformation[2]
 
-        self.checkMethodName(methodName)
-        self.checkFileName(pathName)
+        # print(pathName, methodName, protocolName)
+
+        # self.checkMethodName()
+        # self.checkFileName()
 
         return [methodName, pathName, protocolName]
 
-    def checkMethodName(self, name):
-        if name != 'GET':
-            print('405 Method Not Allowed')
-            status_code = "405 Method Not Allowed"
+    def checkMethodName(self):
+        if self.methodName != 'GET':
+            print(' 405 Method Not Allowed')
+            status_code = " 405 Method Not Allowed"
+            self.sendRequest(status_code)
+        return
 
-    def checkFileName(self, name):
-        currentPath = os.getcwd() + '/www' + name
-        print(currentPath)
-        if os.path.exists(currentPath):
-            print('exists')
+    def redirect301(self):
+        status_code = " 301 Moved Permanently"
+        self.sendRequest(status_code)
+
+    def checkFileName(self):
+        self.currentPath = os.getcwd() + '/www' + self.pathName
+
+        #Append the index.html to the end if last character "/"
+        if self.pathName[-1] == "/":
+            self.currentPath += 'index.html'
+
+        print('above')
+        print(self.currentPath)
+        if os.path.isfile(self.currentPath):
+            status_code = " 200 OK"
+            self.sendRequest(status_code)
         else:
-            print('nope')
+            status_code = " 404 Not Found"
+            self.sendRequest(status_code)
+
+    def sendRequest(self, statusCode):
+        print("Status Code:", statusCode)
+
+        if statusCode == " 404 Not Found":
+            print('in 404')
+            req = self.protocolName + statusCode + '\n\r\n'
+            print("Request:", req)
+            self.request.sendall(req.encode())
+
+        if statusCode == " 200 OK":
+            print('in 200')
+            req = self.protocolName + statusCode + '\r\n'
+            print("Request:", req)
+            self.request.sendall(req.encode())
+            file_object = open(self.currentPath, "r")
+            file_string = file_object.read()
+            file_string = file_string + "\r\n"
+
+            # self.request.sendall("HTTP/1.1 200 OK\n".encode("utf-8"))
+            self.request.sendall("Content-Type: text/html; charset=UTF-8\r\n".encode("utf-8"))
+            self.request.sendall(("\r\n"+file_string).encode("utf-8"))
+        
+        if statusCode == " 301 Moved Permanently":
+            print("301")
+            req = self.protocolName + statusCode + '\n'
+            
+            print("Request:", req)
+            self.request.sendall(req.encode())
+
+            redirect = 'Location: http://127.0.0.1:8080/index.html\r\n\r\n'
+            print("Redirect:", redirect)
+            self.request.sendall(redirect.encode())
+
+            return
+            # self.request.sendall(redirect.encode())
+            # print("Redirect: ", redirect)
+
+        if statusCode == " 405 Method Not Allowed":
+            req = self.protocolName + statusCode + '\r\n\r\n'
+            print("Request:", req)
+            self.request.sendall(req.encode())
+            return
+        
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
