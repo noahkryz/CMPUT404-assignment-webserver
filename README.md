@@ -19,6 +19,9 @@ server.py contains contributions from:
 * Jackson Z Chang
 * Mandy Meindersma 
 
+Resources Used:
+https://linuxize.com/post/python-check-if-file-exists/
+
 But the server.py example is derived from the python documentation
 examples thus some of the code is Copyright © 2001-2013 Python
 Software Foundation; All Rights Reserved under the PSF license (GPL
