@@ -10,7 +10,7 @@ Make a simple webserver.
 Contributors / Licensing
 ========================
 
-Generally everything is LICENSE'D under the Apache 2 license by Abram Hindle.
+Generally everything is LICENSE'D under the Apache 2 license by Abram Hindle & Noah Kryzanowski.
 
 server.py contains contributions from:
 
